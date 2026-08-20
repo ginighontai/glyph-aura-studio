@@ -10,6 +10,11 @@ hand. Output is a high-resolution poster, exportable as PNG, JPG or SVG.
 
 It never pastes your words onto the reference image, and it never changes your text.
 
+![The studio with a Bengali poster generated from an example style](docs/screenshots/studio-light.jpg)
+
+<sub>Captured from a real headless Chromium run: Bengali text set in Galada, the Style DNA panel
+populated from the reference, and the export panel unlocked. More below.</sub>
+
 ---
 
 ## Two engines, one Style DNA
@@ -36,7 +41,7 @@ raster generation.
 
 ```bash
 npm install
-npm run fonts:fetch     # vendors 30 OFL faces into public/fonts (~11 MB, once)
+npm run fonts:fetch     # vendors 32 OFL faces into public/fonts (~11.3 MB, once)
 npm run dev             # API server on :8787 + Vite on :5173
 ```
 
@@ -199,7 +204,7 @@ tools/offline-typecheck/   type-check without node_modules (see its README)
 | `npm run dev` | API + Vite together |
 | `npm run build` | Type-check, then bundle |
 | `npm start` | Serve `dist/` and `/api` from one Node process |
-| `npm test` | 63 test cases across transliteration, analysis, layout, params, prompt, fidelity and SVG |
+| `npm test` | 68 test cases across transliteration, analysis, layout, params, prompt, fidelity and SVG |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run fonts:fetch` | Vendor the type library (skips faces already present) |
 
@@ -225,11 +230,11 @@ All Gemini traffic goes through the server. Every endpoint degrades with a clear
 
 ## Fonts and licensing
 
-30 faces are bundled under the **SIL Open Font License 1.1**, vendored from
+32 faces are bundled under the **SIL Open Font License 1.1**, vendored from
 [google/fonts](https://github.com/google/fonts) by `npm run fonts:fetch`. Per-family
-licence texts land in `public/fonts/licenses/`. Coverage: 13 Latin, 8 Bengali,
-9 Devanagari across serif, sans, slab, display, script, brush, handwriting, rounded
-and blackletter.
+licence texts land in `public/fonts/licenses/`. Coverage: 15 Latin, 8 Bengali and
+9 Devanagari faces across serif, sans, slab, display, script, brush, handwriting,
+rounded and blackletter.
 
 Posters you generate are yours. Check the licence of any reference image you upload —
 the studio only reads its style, but the artwork itself may belong to someone else.
@@ -246,3 +251,37 @@ the studio only reads its style, but the artwork itself may belong to someone el
   Set it by hand, or add an API key and let the analyst read it.
 - `npm run fonts:fetch` needs network access to GitHub once. After that the studio is
   entirely offline.
+- Verified in headless Chromium only (see below). Safari and Firefox should be fine —
+  the two features with patchy support, `ctx.letterSpacing` and canvas `filter`, both
+  have fallbacks — but they have not been exercised on real hardware.
+
+## Verified in a browser
+
+The interface and the render engine were driven in headless Chromium over the DevTools
+protocol, with the console relayed so a thrown error could not hide behind a screenshot.
+Every run below reported **zero console errors and zero uncaught exceptions**.
+
+| What was checked | Result |
+|---|---|
+| App mounts, all panels render, empty states correct | ✅ |
+| Load example → Generate → all six stages complete | ✅ poster in 0.5 s |
+| Phonetic keyboard, live | `ami banglay gan gai` → আমি বাংলায় গান গাই |
+| Character palette insert | appends the glyph, poster re-renders with it |
+| Text fidelity verdict | *exact by construction*, alt text carries the real string |
+| PNG export at 2× | 2700 × 3376, RGBA — a true re-render, not an upscale |
+| SVG export | valid XML, live `<text>`, embedded font, filters present |
+| Dark mode, mobile (430 px) | ✅ single column, sticky Generate bar |
+
+Five real bugs were found this way and fixed: an effect description reading
+`"none — flat colour"` was not recognised as *none* (so flat artwork rendered with a
+gradient); explicit numeric render hints were being overridden by prose parsing; the
+line-breaking fitter re-flowed line breaks the designer had typed; a duplicate render
+fired straight after the first generate; and Indic vowel signs were stripped from export
+filenames because they are Unicode *marks*, not letters.
+
+| | |
+|---|---|
+| ![Render engine matrix](docs/screenshots/render-engine-matrix.jpg) | ![Bengali phonetic input](docs/screenshots/phonetic-bengali.jpg) |
+| Eight presets across three scripts, straight from the engine | The phonetic keyboard, guide and character palette |
+| ![Dark mode](docs/screenshots/studio-dark.jpg) | ![Mobile](docs/screenshots/mobile.jpg) |
+| Dark appearance, Devanagari poster | 430 px, stacked panels, sticky Generate |

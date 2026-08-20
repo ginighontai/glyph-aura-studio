@@ -78,6 +78,24 @@
   src: url('./AbrilFatface-Regular.ttf') format('truetype');
 }
 
+/* Alfa Slab One — Heavy wood-type slab; the letterpress and fairground voice. */
+@font-face {
+  font-family: 'Alfa Slab One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./AlfaSlabOne-Regular.ttf') format('truetype');
+}
+
+/* Bitter Variable — Contemporary slab serif across nine weights. */
+@font-face {
+  font-family: 'Bitter Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./Bitter-Variable.ttf') format('truetype-variations');
+}
+
 /* Great Vibes — Formal copperplate script with generous swashes. */
 @font-face {
   font-family: 'Great Vibes';
@@ -277,8 +295,10 @@
 }
 
 /* Interface stack: native Apple system text first, bundled Inter as the
-   cross-platform fallback so the studio looks identical everywhere. */
+   cross-platform fallback, then the bundled Indic faces so language names and
+   glyph palettes never fall back to tofu on systems without them. */
 :root {
   --ga-font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
-    'Inter Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    'Inter Variable', 'Helvetica Neue', Helvetica, Arial,
+    'Noto Sans Bengali Variable', 'Noto Sans Devanagari Variable', sans-serif;
 }

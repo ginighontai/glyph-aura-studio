@@ -10,7 +10,7 @@ export const FONT_MANIFEST = {
   "generatedBy": "scripts/fetch-fonts.mjs",
   "source": "https://github.com/google/fonts/tree/main",
   "license": "SIL Open Font License 1.1",
-  "fontCount": 30,
+  "fontCount": 32,
   "fonts": [
     {
       "id": "inter",
@@ -228,6 +228,61 @@ export const FONT_MANIFEST = {
       "note": "Nineteenth-century fat face; extreme contrast advertising serif.",
       "licenseFile": "/fonts/licenses/abril-fatface.OFL.txt",
       "upstream": "https://github.com/google/fonts/tree/main/ofl/abrilfatface"
+    },
+    {
+      "id": "alfa-slab-one",
+      "family": "Alfa Slab One",
+      "file": "/fonts/AlfaSlabOne-Regular.ttf",
+      "scripts": [
+        "Latin"
+      ],
+      "category": "slab",
+      "contrast": 2,
+      "weightMin": 400,
+      "weightMax": 400,
+      "variable": false,
+      "caps": false,
+      "optical": 1,
+      "tags": [
+        "slab",
+        "heavy",
+        "letterpress",
+        "vintage",
+        "advertising",
+        "poster",
+        "wood-type",
+        "sturdy"
+      ],
+      "note": "Heavy wood-type slab; the letterpress and fairground voice.",
+      "licenseFile": "/fonts/licenses/alfa-slab-one.OFL.txt",
+      "upstream": "https://github.com/google/fonts/tree/main/ofl/alfaslabone"
+    },
+    {
+      "id": "bitter",
+      "family": "Bitter Variable",
+      "file": "/fonts/Bitter-Variable.ttf",
+      "scripts": [
+        "Latin"
+      ],
+      "category": "slab",
+      "contrast": 2,
+      "weightMin": 100,
+      "weightMax": 900,
+      "variable": true,
+      "caps": false,
+      "optical": 1,
+      "tags": [
+        "slab",
+        "contemporary",
+        "editorial",
+        "screen",
+        "sturdy",
+        "workhorse",
+        "serif"
+      ],
+      "note": "Contemporary slab serif across nine weights.",
+      "licenseFile": "/fonts/licenses/bitter.OFL.txt",
+      "upstream": "https://github.com/google/fonts/tree/main/ofl/bitter"
     },
     {
       "id": "great-vibes",

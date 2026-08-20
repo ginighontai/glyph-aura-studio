@@ -136,10 +136,23 @@ test('font selection never returns a face that lacks the script', () => {
 });
 
 test('every script has real bundled coverage', () => {
-  assert.ok(fontsForScript('Latin').length >= 10);
+  assert.ok(fontsForScript('Latin').length >= 12);
   assert.ok(fontsForScript('Bengali').length >= 6);
   assert.ok(fontsForScript('Devanagari').length >= 6);
-  assert.equal(FONT_LIBRARY.length, 30);
+  assert.ok(FONT_LIBRARY.length >= 30, `expected a full library, got ${FONT_LIBRARY.length}`);
+
+  // Every shape family the selector can ask for must exist for every script,
+  // otherwise a Style DNA silently falls back to something unrelated.
+  for (const script of ['Latin', 'Bengali', 'Devanagari']) {
+    const categories = new Set(fontsForScript(script).map((font) => font.category));
+    for (const needed of ['serif', 'sans', 'display']) {
+      assert.ok(categories.has(needed), `${script} has no ${needed} face`);
+    }
+  }
+  const latinCategories = new Set(fontsForScript('Latin').map((font) => font.category));
+  for (const needed of ['slab', 'script', 'brush', 'handwriting', 'blackletter']) {
+    assert.ok(latinCategories.has(needed), `Latin has no ${needed} face`);
+  }
 });
 
 test('the analysed shape family drives the pick', () => {

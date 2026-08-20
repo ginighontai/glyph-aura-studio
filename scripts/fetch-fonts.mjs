@@ -121,10 +121,12 @@ writeFileSync(
 ${faceBlocks}
 
 /* Interface stack: native Apple system text first, bundled Inter as the
-   cross-platform fallback so the studio looks identical everywhere. */
+   cross-platform fallback, then the bundled Indic faces so language names and
+   glyph palettes never fall back to tofu on systems without them. */
 :root {
   --ga-font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
-    'Inter Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    'Inter Variable', 'Helvetica Neue', Helvetica, Arial,
+    'Noto Sans Bengali Variable', 'Noto Sans Devanagari Variable', sans-serif;
 }
 `,
   'utf8',

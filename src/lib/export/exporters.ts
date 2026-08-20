@@ -37,14 +37,26 @@ export function svgToBlob(markup: string): Blob {
   return new Blob([markup], { type: 'image/svg+xml;charset=utf-8' });
 }
 
-const slugify = (value: string): string =>
-  value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
+/**
+ * Filename slug.
+ *
+ * Bengali and Devanagari vowel signs, viramas and nuktas are Unicode *marks*
+ * (\p{M}), not letters — dropping them turns আমি into আম and মন্দির into মদর.
+ * They are kept, and the string is left in NFC so clusters stay intact.
+ */
+const slugify = (value: string): string => {
+  const slug = value
+    .normalize('NFC')
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^\p{L}\p{N}\p{M}-]+/gu, '')
+    .replace(/-{2,}/g, '-')
     .replace(/^-+|-+$/g, '')
     .toLowerCase()
-    .slice(0, 42) || 'poster';
+    .slice(0, 48)
+    // A slice can land inside a cluster; drop any orphaned trailing marks.
+    .replace(/[\p{M}-]+$/u, '');
+  return slug || 'poster';
+};
 
 export function buildFilename(options: {
   text: string;

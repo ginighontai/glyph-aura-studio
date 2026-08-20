@@ -39,6 +39,17 @@ export function useLivePreview(): void {
   );
 
   const applied = useRef(signature);
+  const lastOutputId = useRef<string | null>(null);
+
+  // Any completed render — including the one from the Generate button — already
+  // reflects the current controls. Without this, the first manual generate would
+  // be followed by a pointless second render for changes made before it.
+  useEffect(() => {
+    if (state.output && state.output.id !== lastOutputId.current) {
+      lastOutputId.current = state.output.id;
+      applied.current = signature;
+    }
+  }, [signature, state.output]);
 
   useEffect(() => {
     if (!state.output || state.engine !== 'vector' || state.generating) return;

@@ -78,7 +78,8 @@
   --ga-nav-height: 56px;
 
   --ga-font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter Variable',
-    'Helvetica Neue', Helvetica, Arial, sans-serif;
+    'Helvetica Neue', Helvetica, Arial, 'Noto Sans Bengali Variable', 'Noto Sans Devanagari Variable',
+    sans-serif;
   --ga-font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
 }
 

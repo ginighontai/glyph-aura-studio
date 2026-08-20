@@ -230,8 +230,17 @@ export function normalizeHex(input: unknown, fallback: string): string {
   return fallback;
 }
 
-const isNoneish = (value: unknown): boolean =>
-  typeof value !== 'string' || /^(none|no|n\/?a|null|absent|not present|)$/i.test(value.trim());
+/**
+ * Recognises "no effect" in the many ways an analyst (or a model) writes it.
+ * Descriptions routinely read "none — flat colour" or "no shadow", so matching
+ * only the bare word would silently switch effects on.
+ */
+const isNoneish = (value: unknown): boolean => {
+  if (typeof value !== 'string') return true;
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+  return /^(none|no|n\/?a|null|nil|absent|not present|not detected|nothing|flat)\b/i.test(trimmed);
+};
 
 export function hasEffect(value: string | undefined): boolean {
   return !isNoneish(value);
@@ -383,21 +392,32 @@ export function normalizeStyleDna(input: unknown): StyleDna {
   };
 
   const alignmentWord = compositionProfile.alignment.toLowerCase();
-  const alignment: RenderHints['alignment'] = /right/.test(alignmentWord)
+  const alignmentFromProse: RenderHints['alignment'] = /right/.test(alignmentWord)
     ? 'right'
     : /left|flush left|ragged right/.test(alignmentWord)
       ? 'left'
       : 'center';
+  // An explicit hint always beats the prose it was derived from.
+  const alignment = pickEnum<RenderHints['alignment']>(
+    hints.alignment,
+    ['left', 'center', 'right'],
+    alignmentFromProse,
+  );
 
   const gradientText = colorProfile.gradientDescription.toLowerCase();
-  const gradientKind: RenderHints['gradientKind'] = isNoneish(gradientText)
+  const gradientFromProse: RenderHints['gradientKind'] = isNoneish(gradientText)
     ? 'none'
     : /radial|centre-out|center-out|burst|spot/.test(gradientText)
       ? 'radial'
       : 'linear';
+  const gradientKind = pickEnum<RenderHints['gradientKind']>(
+    hints.gradientKind,
+    ['none', 'linear', 'radial'],
+    gradientFromProse,
+  );
 
   const bgText = `${effectsProfile.lighting} ${compositionProfile.layout} ${colorProfile.backgroundColors.join(' ')}`;
-  const backgroundKind: RenderHints['backgroundKind'] =
+  const backgroundFromProse: RenderHints['backgroundKind'] =
     colorProfile.backgroundColors.length > 1
       ? /radial|glow|spot|vignette/i.test(bgText)
         ? 'radial'
@@ -405,6 +425,11 @@ export function normalizeStyleDna(input: unknown): StyleDna {
       : /vignette|darkened edges/i.test(bgText)
         ? 'vignette'
         : 'flat';
+  const backgroundKind = pickEnum<RenderHints['backgroundKind']>(
+    hints.backgroundKind,
+    ['flat', 'linear', 'radial', 'vignette'],
+    backgroundFromProse,
+  );
 
   const contrastRatio = num(
     hints.strokeContrastRatio,

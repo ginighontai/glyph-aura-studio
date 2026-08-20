@@ -86,7 +86,12 @@ interface Attempt {
   blockWidth: number;
 }
 
-function attempt(input: LayoutInput, baseSize: number, box: LayoutBox): Attempt {
+function attempt(
+  input: LayoutInput,
+  baseSize: number,
+  box: LayoutBox,
+  allowWrap: boolean,
+): Attempt {
   const paragraphs = input.text.replace(/\r\n/g, '\n').split('\n');
   const multi = paragraphs.filter((paragraph) => paragraph.trim().length > 0).length > 1;
   const lines: Attempt['lines'] = [];
@@ -103,7 +108,11 @@ function attempt(input: LayoutInput, baseSize: number, box: LayoutBox): Attempt 
       return;
     }
 
-    for (const line of wrapParagraph(paragraph.trim(), fontSize, box.width, input.measure)) {
+    const wrapped = allowWrap
+      ? wrapParagraph(paragraph.trim(), fontSize, box.width, input.measure)
+      : [paragraph.trim()];
+
+    for (const line of wrapped) {
       const width = input.measure(line, fontSize);
       lines.push({ text: line, fontSize, width, paragraph: index });
       blockHeight += fontSize * input.lineHeight;
@@ -129,28 +138,43 @@ export function layoutText(input: LayoutInput): LayoutResult {
   const fits = (candidate: Attempt): boolean =>
     candidate.blockHeight <= box.height + 0.5 && candidate.blockWidth <= box.width + 0.5;
 
-  let low = minSize;
-  let high = Math.max(minSize, maxSize);
-  let best = attempt(input, low, box);
-  let bestSize = low;
+  /** Largest size at which the whole block fits, for a given wrapping policy. */
+  const solve = (allowWrap: boolean): { best: Attempt; size: number } => {
+    let low = minSize;
+    let high = Math.max(minSize, maxSize);
+    let best = attempt(input, low, box, allowWrap);
+    let size = low;
 
-  const largest = attempt(input, high, box);
-  if (fits(largest)) {
-    best = largest;
-    bestSize = high;
-  } else {
+    const largest = attempt(input, high, box, allowWrap);
+    if (fits(largest)) return { best: largest, size: high };
+
     for (let iteration = 0; iteration < 26 && high - low > 0.25; iteration += 1) {
       const middle = (low + high) / 2;
-      const candidate = attempt(input, middle, box);
+      const candidate = attempt(input, middle, box, allowWrap);
       if (fits(candidate)) {
         best = candidate;
-        bestSize = middle;
+        size = middle;
         low = middle;
       } else {
         high = middle;
       }
     }
+    return { best, size };
+  };
+
+  // A line break the designer typed is a composition decision, so it is treated
+  // as authoritative: only a single unbroken block is re-flowed to fill the
+  // frame. If honouring the breaks would collapse the type to the floor, the
+  // wrapped solution is used instead of rendering something unreadable.
+  const authored = input.text.replace(/\r\n/g, '\n').trim().includes('\n');
+  let solution = solve(!authored);
+  if (authored && (solution.size <= minSize * 1.35 || !fits(solution.best))) {
+    const reflowed = solve(true);
+    if (reflowed.size > solution.size) solution = reflowed;
   }
+
+  const best = solution.best;
+  const bestSize = solution.size;
 
   const clamped = bestSize <= minSize + 0.01;
   const overflow = !fits(best);

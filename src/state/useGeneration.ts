@@ -351,7 +351,7 @@ export function useGeneration() {
           title: 'Poster ready',
           message:
             state.engine === 'vector'
-              ? `Set in ${output.fontFamily} at ${output.width} × ${output.height}. Export up to 4× from the panel on the right.`
+              ? `Set in ${output.fontFamily} at ${output.width} × ${output.height}. Export up to 4× from the Export panel.`
               : `Rendered by ${output.modelUsed ?? 'the image model'}. Check the fidelity report before exporting.`,
           ttl: 5200,
         });
