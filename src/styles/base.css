@@ -1,0 +1,730 @@
+/* ---------------------------------------------------------------------------
+ * Reset, typography scale and shared primitives.
+ * ------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--ga-nav-height) + 24px);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--ga-bg);
+  color: var(--ga-text);
+  font-family: var(--ga-font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis-weight: none;
+  transition: background var(--ga-base) var(--ga-ease), color var(--ga-base) var(--ga-ease);
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.08;
+}
+
+.ga-display {
+  font-size: clamp(2.6rem, 6.2vw, 4.6rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.ga-title {
+  font-size: clamp(1.6rem, 3vw, 2.35rem);
+  letter-spacing: -0.025em;
+}
+
+.ga-subtitle {
+  font-size: clamp(1.02rem, 1.5vw, 1.25rem);
+  font-weight: 400;
+  color: var(--ga-text-secondary);
+  letter-spacing: -0.012em;
+  line-height: 1.5;
+}
+
+.ga-panel-title {
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.ga-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ga-text-tertiary);
+}
+
+.ga-caption {
+  font-size: 0.8rem;
+  color: var(--ga-text-secondary);
+  line-height: 1.45;
+}
+
+.ga-mono {
+  font-family: var(--ga-font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0;
+}
+
+a {
+  color: var(--ga-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+canvas {
+  display: block;
+}
+
+::selection {
+  background: var(--ga-accent-soft);
+}
+
+/* Focus: visible, calm, and only for keyboard users. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ga-shadow-focus);
+  border-radius: 8px;
+}
+
+.ga-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ga-skip-link {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  z-index: 200;
+  padding: 10px 18px;
+  border-radius: var(--ga-r-pill);
+  background: var(--ga-accent);
+  color: #fff;
+  font-weight: 600;
+  transition: top var(--ga-fast) var(--ga-ease);
+}
+
+.ga-skip-link:focus {
+  top: 12px;
+  text-decoration: none;
+}
+
+/* --------------------------------------------------------------- primitives */
+
+.ga-panel {
+  position: relative;
+  background: var(--ga-panel);
+  border: 1px solid var(--ga-hairline);
+  border-radius: var(--ga-r-card);
+  box-shadow: var(--ga-shadow-sm);
+  backdrop-filter: var(--ga-blur);
+  -webkit-backdrop-filter: var(--ga-blur);
+}
+
+.ga-panel--flush {
+  overflow: hidden;
+}
+
+.ga-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ga-space-3);
+  padding: var(--ga-space-5) var(--ga-space-5) var(--ga-space-3);
+}
+
+.ga-panel__header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ga-panel__body {
+  padding: 0 var(--ga-space-5) var(--ga-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ga-space-4);
+}
+
+.ga-panel__footer {
+  padding: var(--ga-space-4) var(--ga-space-5);
+  border-top: 1px solid var(--ga-hairline);
+}
+
+.ga-divider {
+  height: 1px;
+  background: var(--ga-hairline);
+  border: 0;
+  margin: 0;
+}
+
+/* Buttons ----------------------------------------------------------------- */
+
+.ga-btn {
+  --btn-bg: var(--ga-inset);
+  --btn-fg: var(--ga-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--ga-r-pill);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-size: 0.86rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--ga-fast) var(--ga-ease),
+    color var(--ga-fast) var(--ga-ease),
+    transform var(--ga-fast) var(--ga-ease),
+    box-shadow var(--ga-fast) var(--ga-ease),
+    opacity var(--ga-fast) var(--ga-ease);
+}
+
+.ga-btn:hover:not(:disabled) {
+  background: var(--ga-inset-strong);
+}
+
+.ga-btn:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+.ga-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.ga-btn--primary {
+  --btn-bg: var(--ga-accent);
+  --btn-fg: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.ga-btn--primary:hover:not(:disabled) {
+  background: var(--ga-accent-hover);
+}
+
+.ga-btn--primary:active:not(:disabled) {
+  background: var(--ga-accent-press);
+}
+
+.ga-btn--outline {
+  --btn-bg: transparent;
+  border-color: var(--ga-hairline-strong);
+}
+
+.ga-btn--ghost {
+  --btn-bg: transparent;
+}
+
+.ga-btn--quiet {
+  --btn-bg: transparent;
+  color: var(--ga-text-secondary);
+  padding: 6px 10px;
+  min-height: 30px;
+  font-size: 0.8rem;
+}
+
+.ga-btn--quiet:hover:not(:disabled) {
+  color: var(--ga-text);
+  background: var(--ga-inset);
+}
+
+.ga-btn--danger {
+  --btn-bg: var(--ga-error-soft);
+  --btn-fg: var(--ga-error);
+}
+
+.ga-btn--block {
+  width: 100%;
+}
+
+.ga-btn--large {
+  min-height: 48px;
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--ga-r-pill);
+}
+
+/* The generate button gets a single, slow shimmer so it reads as the primary
+   action without turning into a carnival. */
+.ga-btn--shimmer:not(:disabled) {
+  position: relative;
+  overflow: hidden;
+}
+
+.ga-btn--shimmer:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 32%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 68%
+  );
+  transform: translateX(-120%);
+  animation: ga-shimmer 4.6s var(--ga-ease) infinite;
+  pointer-events: none;
+}
+
+@keyframes ga-shimmer {
+  0%,
+  62% {
+    transform: translateX(-120%);
+  }
+  86%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* Inputs ------------------------------------------------------------------ */
+
+.ga-input,
+.ga-textarea,
+.ga-select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--ga-hairline);
+  border-radius: var(--ga-r-input);
+  background: var(--ga-surface);
+  color: var(--ga-text);
+  font-size: 0.92rem;
+  transition:
+    border-color var(--ga-fast) var(--ga-ease),
+    box-shadow var(--ga-fast) var(--ga-ease),
+    background var(--ga-fast) var(--ga-ease);
+}
+
+.ga-input:focus,
+.ga-textarea:focus,
+.ga-select:focus {
+  outline: none;
+  border-color: var(--ga-accent);
+  box-shadow: 0 0 0 4px var(--ga-accent-ring);
+}
+
+.ga-textarea {
+  min-height: 108px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.ga-select {
+  appearance: none;
+  padding-right: 34px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% + 1px),
+    calc(100% - 13px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.ga-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Segmented control ------------------------------------------------------- */
+
+.ga-segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--ga-inset);
+  border-radius: var(--ga-r-pill);
+  border: 1px solid transparent;
+}
+
+.ga-segmented--block {
+  display: flex;
+  width: 100%;
+}
+
+.ga-segmented__option {
+  flex: 1;
+  min-height: 30px;
+  padding: 5px 14px;
+  border: 0;
+  border-radius: var(--ga-r-pill);
+  background: transparent;
+  color: var(--ga-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--ga-fast) var(--ga-ease),
+    color var(--ga-fast) var(--ga-ease),
+    box-shadow var(--ga-fast) var(--ga-ease);
+}
+
+.ga-segmented__option:hover:not(:disabled):not([aria-pressed='true']) {
+  color: var(--ga-text);
+}
+
+.ga-segmented__option[aria-pressed='true'] {
+  background: var(--ga-panel-solid);
+  color: var(--ga-text);
+  box-shadow: var(--ga-shadow-xs);
+}
+
+.ga-segmented__option:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Switch ------------------------------------------------------------------ */
+
+.ga-switch {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ga-space-4);
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.ga-switch--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ga-switch__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ga-switch__title {
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.ga-switch__track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 26px;
+  margin-top: 1px;
+  border-radius: var(--ga-r-pill);
+  background: var(--ga-hairline-strong);
+  transition: background var(--ga-base) var(--ga-ease);
+}
+
+.ga-switch__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+  transition: transform var(--ga-base) var(--ga-ease);
+}
+
+.ga-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ga-switch input:checked + .ga-switch__track {
+  background: var(--ga-success);
+}
+
+.ga-switch input:checked + .ga-switch__track::after {
+  transform: translateX(18px);
+}
+
+.ga-switch input:focus-visible + .ga-switch__track {
+  box-shadow: var(--ga-shadow-focus);
+}
+
+/* Slider ------------------------------------------------------------------ */
+
+.ga-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ga-slider__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ga-space-3);
+}
+
+.ga-slider__name {
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+.ga-slider__value {
+  font-family: var(--ga-font-mono);
+  font-size: 0.76rem;
+  color: var(--ga-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ga-slider input[type='range'] {
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ga-slider input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--ga-accent) var(--ga-fill, 50%),
+    var(--ga-hairline-strong) var(--ga-fill, 50%)
+  );
+}
+
+.ga-slider input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+  transition: transform var(--ga-fast) var(--ga-ease);
+}
+
+.ga-slider input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1.14);
+}
+
+.ga-slider input[type='range']::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ga-hairline-strong);
+}
+
+.ga-slider input[type='range']::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ga-accent);
+}
+
+.ga-slider input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+}
+
+.ga-slider__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--ga-text-tertiary);
+}
+
+/* Chips, pills, badges ---------------------------------------------------- */
+
+.ga-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--ga-r-chip);
+  background: var(--ga-inset);
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--ga-text-secondary);
+  white-space: nowrap;
+}
+
+.ga-chip--accent {
+  background: var(--ga-accent-soft);
+  color: var(--ga-accent);
+}
+
+.ga-chip--success {
+  background: var(--ga-success-soft);
+  color: var(--ga-success);
+}
+
+.ga-chip--warning {
+  background: var(--ga-warning-soft);
+  color: #a35d00;
+}
+
+:root[data-theme='dark'] .ga-chip--warning {
+  color: var(--ga-warning);
+}
+
+.ga-chip--error {
+  background: var(--ga-error-soft);
+  color: var(--ga-error);
+}
+
+.ga-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.ga-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ga-space-2);
+  flex-wrap: wrap;
+}
+
+.ga-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ga-space-3);
+}
+
+.ga-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Disclosure -------------------------------------------------------------- */
+
+.ga-disclosure {
+  border: 1px solid var(--ga-hairline);
+  border-radius: var(--ga-r-panel);
+  background: var(--ga-inset);
+  overflow: hidden;
+}
+
+.ga-disclosure__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--ga-space-3);
+  width: 100%;
+  padding: 13px 16px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: background var(--ga-fast) var(--ga-ease);
+}
+
+.ga-disclosure__summary:hover {
+  background: var(--ga-inset);
+}
+
+.ga-disclosure__caret {
+  flex: 0 0 auto;
+  width: 14px;
+  color: var(--ga-text-tertiary);
+  transition: transform var(--ga-base) var(--ga-ease);
+}
+
+.ga-disclosure__caret--open {
+  transform: rotate(90deg);
+}
+
+.ga-disclosure__content {
+  padding: 0 16px 16px;
+  animation: ga-expand var(--ga-base) var(--ga-ease-out);
+}
+
+@keyframes ga-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

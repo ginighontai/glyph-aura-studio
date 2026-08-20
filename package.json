@@ -1,0 +1,33 @@
+{
+  "name": "glyphaura-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "GlyphAura Studio — multilingual typography & calligraphy style transfer for English, Bengali and Hindi.",
+  "engines": {
+    "node": ">=18.18"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "vite",
+    "dev:api": "node server/index.mjs",
+    "build": "tsc -p tsconfig.app.json --noEmit && vite build",
+    "preview": "vite preview",
+    "start": "NODE_ENV=production node server/index.mjs",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "fonts:fetch": "node scripts/fetch-fonts.mjs",
+    "fonts:refetch": "node scripts/fetch-fonts.mjs --force",
+    "test": "node --experimental-strip-types --no-warnings --import ./tests/loader.mjs --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "~5.6.3",
+    "vite": "^5.4.11"
+  }
+}
