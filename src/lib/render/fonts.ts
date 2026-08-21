@@ -46,6 +46,33 @@ const AFFINITY: Partial<Record<FontCategory, Partial<Record<FontCategory, number
   monospace: { sans: 12 },
 };
 
+/**
+ * How round each shape family reads. Measured roundness from the reference is
+ * matched against this, which is what stops a fat bubble reference from being
+ * answered with a hairline serif.
+ */
+const CATEGORY_ROUNDNESS: Record<FontCategory, number> = {
+  rounded: 0.95,
+  brush: 0.7,
+  handwriting: 0.6,
+  script: 0.55,
+  sans: 0.45,
+  display: 0.5,
+  slab: 0.35,
+  serif: 0.25,
+  blackletter: 0.2,
+  monospace: 0.4,
+};
+
+const fontRoundness = (font: BundledFont): number => {
+  let base = CATEGORY_ROUNDNESS[font.category] ?? 0.45;
+  if (font.tags.includes('rounded') || font.tags.includes('soft')) base = Math.max(base, 0.9);
+  if (font.tags.includes('chunky') || font.tags.includes('friendly')) base = Math.max(base, 0.8);
+  if (font.tags.includes('angular') || font.tags.includes('condensed')) base = Math.min(base, 0.35);
+  if (font.tags.includes('high-contrast') || font.tags.includes('didone')) base = Math.min(base, 0.22);
+  return base;
+};
+
 const targetContrastBand = (ratio: number): number => {
   if (ratio < 1.3) return 1;
   if (ratio < 2) return 2;
@@ -117,6 +144,19 @@ export function scoreFonts(dna: StyleDna, script: ScriptId): FontScore[] {
           Math.abs(hints.weight - font.weightMax),
         );
         score -= Math.min(24, gap / 25);
+      }
+
+      // Roundness is a measured number, so it outranks prose tag matching.
+      const roundnessGap = Math.abs(fontRoundness(font) - hints.roundness);
+      score -= roundnessGap * 46;
+      if (roundnessGap < 0.15) {
+        reasons.push(
+          hints.roundness > 0.6
+            ? 'matches the rounded, fat letterforms measured in the reference'
+            : hints.roundness < 0.3
+              ? 'matches the angular, low-roundness letterforms measured in the reference'
+              : 'matches the measured letterform roundness',
+        );
       }
 
       const matchedTags = font.tags.filter((tag) => corpus.includes(tag));

@@ -20,20 +20,37 @@ const pct = (value: number): string => `${Math.round(value * 100)}%`;
 
 function inferFontCategory(features: ImageFeatures): FontCategory {
   const { strokeContrastRatio, edgeRoughness, slantDegrees, weightRatio } = features;
+  const { roundness } = features.layers;
   const slant = Math.abs(slantDegrees);
 
+  // Order matters: the strongest visual signals are tested first. Roundness is
+  // decisive for display lettering, because fat rounded forms and chiselled
+  // angular forms can share an identical weight and contrast.
   if (edgeRoughness > 0.5 && strokeContrastRatio > 1.6) return 'brush';
   if (slant >= 10 && strokeContrastRatio >= 2.4) return 'script';
   if (slant >= 10 && edgeRoughness > 0.28) return 'handwriting';
-  if (strokeContrastRatio >= 3.4) return weightRatio > 0.17 ? 'display' : 'serif';
-  if (strokeContrastRatio >= 2.1) return 'serif';
-  if (weightRatio >= 0.2) return 'display';
+
+  // Fat, round, low-contrast forms: bubble and marker lettering.
+  if (roundness >= 0.55 && weightRatio >= 0.1) return 'rounded';
+
+  // Heavy poster lettering that is not round reads as display.
+  if (weightRatio >= 0.16) return 'display';
+
+  // High contrast with an angular boundary is the signature of a serif.
+  if (strokeContrastRatio >= 3.2 && roundness < 0.5) return 'serif';
+  if (strokeContrastRatio >= 2.4 && roundness < 0.38) return 'serif';
+
   if (edgeRoughness > 0.42) return 'brush';
+  if (roundness >= 0.45 && weightRatio >= 0.09) return 'rounded';
   return 'sans';
 }
 
 function inferTypographyCategory(features: ImageFeatures, font: FontCategory): TypographyCategory {
   if (features.glowLevel > 0.45) return 'neon';
+  // A layered stack (outline, border, extrusion) is poster lettering by
+  // definition, whatever the underlying skeleton looks like.
+  const layerCount = features.layers.rings.length + (features.layers.extrusion?.hard ? 1 : 0);
+  if (layerCount >= 2) return 'poster';
   if (features.grainLevel > 0.5 && features.strokeContrastRatio > 2) return 'vintage';
   switch (font) {
     case 'serif':
@@ -206,7 +223,24 @@ export function analyzeLocally(
     lineHeight: features.lineBoxes.length > 1 ? 1.14 : 1.05,
     strokeContrastRatio: round(features.strokeContrastRatio),
     penAngleDegrees: features.strokeContrastRatio > 1.6 ? 30 : 0,
-    outlineWidthEm: 0,
+    outlineWidthEm: features.layers.rings[0]
+      ? round(features.layers.rings[0].widthPx / Math.max(1, features.layers.strokeWidthPx) * 0.5, 3)
+      : 0,
+    borderWidthEm: features.layers.rings[1]
+      ? round(features.layers.rings[1].widthPx / Math.max(1, features.layers.strokeWidthPx) * 0.5, 3)
+      : 0,
+    extrusionOffsetEm: features.layers.extrusion?.hard
+      ? round(
+          Math.hypot(features.layers.extrusion.dx, features.layers.extrusion.dy) /
+            Math.max(1, features.layers.strokeWidthPx) *
+            0.5,
+          3,
+        )
+      : 0,
+    extrusionAngleDegrees: features.layers.extrusion
+      ? round((Math.atan2(features.layers.extrusion.dy, features.layers.extrusion.dx) * 180) / Math.PI, 0)
+      : 45,
+    roundness: round(features.layers.roundness, 2),
     shadowOffsetEm: features.shadow ? round(Math.hypot(features.shadow.dx, features.shadow.dy) * 0.02, 3) : 0,
     shadowBlurEm: features.shadow ? round(features.shadow.strength * 0.08, 3) : 0,
     shadowAngleDegrees: features.shadow
@@ -218,8 +252,8 @@ export function analyzeLocally(
     inkBleedAmount: round(Math.min(1, features.edgeRoughness * 0.7), 2),
     edgeRoughness: round(features.edgeRoughness, 2),
     uppercase: false,
-    gradientAngleDegrees: round(features.inkGradient.angleDegrees, 0),
-    gradientKind: features.inkGradient.strength > 0.18 ? 'linear' : 'none',
+    gradientAngleDegrees: round(features.layers.bodyGradientAngle, 0),
+    gradientKind: features.layers.bodyGradient > 0.2 ? 'linear' : 'none',
     backgroundKind: features.backgroundKind,
     alignment: features.alignment,
     marginRatio: round(features.marginRatio, 3),
@@ -265,7 +299,9 @@ export function analyzeLocally(
           : 'rigid, level baseline',
     },
     colorProfile: {
-      primaryColors: primary,
+      // The body colour comes from the deep core of the strokes, so a thick
+      // border can no longer masquerade as the lettering colour.
+      primaryColors: [features.layers.bodyHex, ...features.layers.accentHexes].slice(0, 3),
       secondaryColors: inkHexes.slice(1),
       gradientDescription:
         features.inkGradient.strength > 0.18
@@ -273,8 +309,12 @@ export function analyzeLocally(
               features.inkGradient.strength,
             )} strength`
           : 'none — flat colour',
-      shadowColor: shadowHex,
-      outlineColor: 'none',
+      shadowColor: features.layers.extrusion && !features.layers.extrusion.hard
+        ? features.layers.extrusion.hex
+        : shadowHex,
+      outlineColor: features.layers.rings[0]?.hex ?? 'none',
+      borderColor: features.layers.rings[1]?.hex ?? 'none',
+      extrusionColor: features.layers.extrusion?.hard ? features.layers.extrusion.hex : 'none',
       backgroundColors: background,
     },
     effectsProfile: {
@@ -283,7 +323,15 @@ export function analyzeLocally(
             features.shadow.strength,
           )} coverage, sampled as ${describeColor(features.shadow.hex)}`
         : 'none',
-      outline: 'none',
+      outline: features.layers.rings[0]
+        ? `${describeColor(features.layers.rings[0].hex)} outline about ${Math.round(features.layers.rings[0].widthPx)}px thick`
+        : 'none',
+      border: features.layers.rings[1]
+        ? `${describeColor(features.layers.rings[1].hex)} outer keyline about ${Math.round(features.layers.rings[1].widthPx)}px thick`
+        : 'none',
+      extrusion: features.layers.extrusion?.hard
+        ? `hard ${describeColor(features.layers.extrusion.hex)} extrusion offset ${features.layers.extrusion.dx}/${features.layers.extrusion.dy}px`
+        : 'none',
       glow: features.glowLevel > 0.2 ? `soft bloom around the strokes, ${pct(features.glowLevel)} intensity` : 'none',
       emboss: 'none',
       inkBleed:

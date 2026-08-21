@@ -1,4 +1,5 @@
 import { kMeansPalette, luminance, toHex, type PaletteEntry, type Rgb } from './color';
+import { analyzeLayers, depthTransform, type LayerAnalysis } from './layers';
 
 export interface ImageLike {
   width: number;
@@ -53,6 +54,12 @@ export interface ImageFeatures {
   shadow: ShadowEstimate | null;
   /** Ratio of stroke width to the tallest line — drives weight inference. */
   weightRatio: number;
+  /**
+   * The layer stack: body colour, concentric outline/border rings, hard
+   * extrusion, roundness and any internal gradient. Display lettering is built
+   * from layers, and measuring it as one blob loses the style entirely.
+   */
+  layers: LayerAnalysis;
 }
 
 const clamp = (value: number, min: number, max: number): number =>
@@ -202,6 +209,54 @@ function localContrastField(gray: Float32Array, width: number, height: number): 
   return out;
 }
 
+/**
+ * Distance-from-the-ground field.
+ *
+ * Brightness thresholding cannot see a layer stack: white body, red outline and
+ * white border are three different distances from a maroon ground but only two
+ * brightness levels, so Otsu splits the stack in half and the outline vanishes.
+ * Measuring how far each pixel is from the sampled ground colour instead yields
+ * the whole silhouette as one region, which is what lets the depth profile
+ * recover each concentric layer.
+ *
+ * It also fixes the colour trap that started this: bright saturated lettering on
+ * a ground of nearly identical brightness.
+ */
+function groundDistanceField(image: ImageLike, width: number, height: number): Float32Array {
+  const samples: Rgb[] = [];
+  const step = Math.max(1, Math.floor(Math.max(width, height) / 160));
+  for (let x = 0; x < width; x += step) {
+    samples.push(pixelAt(image, x));
+    samples.push(pixelAt(image, (height - 1) * width + x));
+  }
+  for (let y = 0; y < height; y += step) {
+    samples.push(pixelAt(image, y * width));
+    samples.push(pixelAt(image, y * width + width - 1));
+  }
+  // Median per channel: robust to a logo or a signature sitting on the frame.
+  const median = (values: number[]): number => {
+    values.sort((a, b) => a - b);
+    return values[Math.floor(values.length / 2)] ?? 0;
+  };
+  const ground: Rgb = {
+    r: median(samples.map((s) => s.r)),
+    g: median(samples.map((s) => s.g)),
+    b: median(samples.map((s) => s.b)),
+  };
+
+  const field = new Float32Array(width * height);
+  for (let i = 0; i < field.length; i += 1) {
+    const rgb = pixelAt(image, i);
+    // Chroma difference counts as well as luminance, scaled into 0-255.
+    const euclid = Math.sqrt(distanceSquared(rgb, ground)) / 441.673;
+    field[i] = Math.min(255, euclid * 320);
+  }
+  return field;
+}
+
+const distanceSquared = (a: Rgb, b: Rgb): number =>
+  (a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2;
+
 interface Segmentation {
   mask: Uint8Array;
   threshold: number;
@@ -242,7 +297,76 @@ function segment(field: Float32Array, width: number, height: number): Segmentati
   return { mask, threshold, darkOnLight, coverage: inkCount / mask.length };
 }
 
+function segmentByDistance(field: Float32Array, width: number, height: number): Segmentation {
+  const threshold = otsuThreshold(field);
+  const mask = new Uint8Array(width * height);
+  let inkCount = 0;
+  for (let i = 0; i < mask.length; i += 1) {
+    if (field[i] > threshold) {
+      mask[i] = 1;
+      inkCount += 1;
+    }
+  }
+  return { mask, threshold, darkOnLight: true, coverage: inkCount / mask.length };
+}
+
 const plausible = (coverage: number): boolean => coverage >= 0.004 && coverage <= 0.55;
+
+/** Share of the frame's own border that a mask covers. */
+function borderTouch(mask: Uint8Array, width: number, height: number): number {
+  let hit = 0;
+  let total = 0;
+  for (let x = 0; x < width; x += 1) {
+    if (mask[x]) hit += 1;
+    if (mask[(height - 1) * width + x]) hit += 1;
+    total += 2;
+  }
+  for (let y = 0; y < height; y += 1) {
+    if (mask[y * width]) hit += 1;
+    if (mask[y * width + width - 1]) hit += 1;
+    total += 2;
+  }
+  return total ? hit / total : 0;
+}
+
+/**
+ * Mean interior depth of a mask: high for solid filled letterforms, low for the
+ * hollow rims that background subtraction can leave behind.
+ */
+function solidity(mask: Uint8Array, width: number, height: number): number {
+  const depth = depthTransform(mask, width, height);
+  let sum = 0;
+  let count = 0;
+  for (let i = 0; i < mask.length; i += 1) {
+    if (!mask[i]) continue;
+    sum += depth[i];
+    count += 1;
+  }
+  return count ? sum / count : 0;
+}
+
+function chooseSegmentation(
+  candidates: Segmentation[],
+  width: number,
+  height: number,
+): Segmentation {
+  const scored = candidates
+    .filter((candidate) => plausible(candidate.coverage))
+    .map((candidate) => ({
+      candidate,
+      // A mask that covers much of the frame border is a background region, not
+      // lettering — that is how a gradient ground fools a global threshold.
+      touch: borderTouch(candidate.mask, width, height),
+      solidity: solidity(candidate.mask, width, height),
+    }))
+    .filter((entry) => entry.touch < 0.3);
+
+  if (!scored.length) return candidates[0];
+  // Highest interior depth wins: filled letterforms beat the hollow rims that
+  // background subtraction leaves behind.
+  scored.sort((a, b) => b.solidity - a.solidity);
+  return scored[0].candidate;
+}
 
 /* ------------------------------------------------------------------- metrics */
 
@@ -422,7 +546,11 @@ function meanRgbOf(image: ImageLike, indices: number[]): Rgb {
 /* ------------------------------------------------------------- main analysis */
 
 export function extractFeatures(source: ImageLike): ImageFeatures {
-  const image = downscale(source, 480);
+  // 480px was too coarse once layer analysis arrived: an outline ring only a few
+  // pixels wide averages into its neighbours, so the stack became invisible and
+  // stroke widths collapsed. 1000px keeps the rings resolvable; every heavy loop
+  // below is either strided or linear in pixel count.
+  const image = downscale(source, 1000);
   const { width, height } = image;
   const gray = grayscale(image);
 
@@ -434,17 +562,42 @@ export function extractFeatures(source: ImageLike): ImageFeatures {
     }
   }
 
-  // Prefer the illumination-flattened segmentation, but fall back to a plain
-  // global threshold if it produces an implausible amount of ink.
-  const adaptive = segment(localContrastField(gray, width, height), width, height);
-  const global = segment(gray, width, height);
-  const chosen = plausible(adaptive.coverage)
-    ? adaptive
-    : plausible(global.coverage)
-      ? global
-      : adaptive;
+  // Two candidate segmentations, then pick by solidity rather than by coverage
+  // alone. Background subtraction copes with gradients and vignettes, but it
+  // hollows out large solid shapes: a wide blur makes the interior of a fat
+  // letter look like background, leaving only a thin rim. That rim is plausible
+  // by area, which is why coverage cannot be the deciding test — it made bubble
+  // lettering measure as hairline strokes.
+  const chosen = chooseSegmentation(
+    [
+      // Ground-distance first: it recovers whole layered silhouettes.
+      segmentByDistance(groundDistanceField(image, width, height), width, height),
+      segment(localContrastField(gray, width, height), width, height),
+      segment(gray, width, height),
+    ],
+    width,
+    height,
+  );
 
-  const { mask, darkOnLight, threshold } = chosen;
+  const { mask, threshold } = chosen;
+
+  // Polarity is a property of the chosen mask, not of the segmenter that made
+  // it: the ground-distance field has no inherent notion of light or dark.
+  let inkLumSum = 0;
+  let inkLumCount = 0;
+  let groundLumSum = 0;
+  let groundLumCount = 0;
+  for (let i = 0; i < mask.length; i += 1) {
+    if (mask[i]) {
+      inkLumSum += gray[i];
+      inkLumCount += 1;
+    } else {
+      groundLumSum += gray[i];
+      groundLumCount += 1;
+    }
+  }
+  const darkOnLight =
+    inkLumSum / Math.max(1, inkLumCount) < groundLumSum / Math.max(1, groundLumCount);
   const inkCoverage = chosen.coverage;
   const inkCount = Math.round(inkCoverage * mask.length);
 
@@ -467,13 +620,18 @@ export function extractFeatures(source: ImageLike): ImageFeatures {
   const inkPalette = kMeansPalette(inkSamples, 3);
   const backgroundPalette = kMeansPalette(bgSamples, 3);
 
-  /* stroke geometry */
+  /* stroke geometry — the depth transform sees through layered artwork, so it
+     is authoritative; the run-length figures are kept for the edge-roughness
+     model, which is calibrated against them. */
   const bbox = boundingBox(mask, width, height);
   const runs = runLengths(mask, width, height).sort((a, b) => a - b);
-  const strokeWidthPx = Math.max(1, percentile(runs, 0.5));
+  const runWidth = Math.max(1, percentile(runs, 0.5));
   const strokeWidthP15 = Math.max(1, percentile(runs, 0.15));
   const strokeWidthP85 = Math.max(1, percentile(runs, 0.85));
-  const strokeContrastRatio = clamp(strokeWidthP85 / strokeWidthP15, 1, 8);
+
+  const layers = analyzeLayers(image.data, mask, width, height);
+  const strokeWidthPx = layers.strokeWidthPx;
+  const strokeContrastRatio = layers.strokeContrastRatio;
 
   /* edge roughness: measured perimeter versus the perimeter a smooth stroke of
      this width would have */
@@ -489,7 +647,7 @@ export function extractFeatures(source: ImageLike): ImageFeatures {
       if (!up || !down || !left || !right) perimeter += 1;
     }
   }
-  const expectedPerimeter = (2 * inkCount) / Math.max(1, strokeWidthPx);
+  const expectedPerimeter = (2 * inkCount) / Math.max(1, runWidth);
   const edgeRoughness = clamp(perimeter / Math.max(1, expectedPerimeter) - 1, 0, 1);
 
   /* slant, lines, composition */
@@ -709,5 +867,6 @@ export function extractFeatures(source: ImageLike): ImageFeatures {
     glowLevel,
     shadow,
     weightRatio: clamp(strokeWidthPx / tallestLine, 0.01, 0.6),
+    layers,
   };
 }

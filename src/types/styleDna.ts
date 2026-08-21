@@ -56,12 +56,20 @@ export interface ColorProfile {
   gradientDescription: string;
   shadowColor: string;
   outlineColor: string;
+  /** Outer ring beyond the outline — the white keyline poster lettering uses. */
+  borderColor: string;
+  /** Flat colour of a hard drop-extrusion, if the lettering has one. */
+  extrusionColor: string;
   backgroundColors: string[];
 }
 
 export interface EffectsProfile {
   shadow: string;
   outline: string;
+  /** Outer keyline beyond the outline. */
+  border: string;
+  /** Hard offset copy behind the letters (poster extrusion, not a soft shadow). */
+  extrusion: string;
   glow: string;
   emboss: string;
   inkBleed: string;
@@ -95,6 +103,16 @@ export interface RenderHints {
   /** Broad-nib pen angle in degrees, used for calligraphic modulation. */
   penAngleDegrees: number;
   outlineWidthEm: number;
+  /** Outer keyline drawn beyond the outline, in em. */
+  borderWidthEm: number;
+  /** Hard offset copy behind the letters, in em (0 = none). */
+  extrusionOffsetEm: number;
+  extrusionAngleDegrees: number;
+  /**
+   * 0 = angular or hairline letterforms, 1 = fat rounded "bubble" forms.
+   * Drives typeface selection more strongly than any prose description.
+   */
+  roundness: number;
   shadowOffsetEm: number;
   shadowBlurEm: number;
   /** Direction the shadow falls, 0° = to the right, 45° = down-right. */
@@ -159,6 +177,10 @@ export const DEFAULT_RENDER_HINTS: RenderHints = {
   strokeContrastRatio: 1,
   penAngleDegrees: 30,
   outlineWidthEm: 0,
+  borderWidthEm: 0,
+  extrusionOffsetEm: 0,
+  extrusionAngleDegrees: 45,
+  roundness: 0.4,
   shadowOffsetEm: 0,
   shadowBlurEm: 0,
   shadowAngleDegrees: 45,
@@ -369,12 +391,16 @@ export function normalizeStyleDna(input: unknown): StyleDna {
     gradientDescription: str(color.gradientDescription, 'none — flat colour'),
     shadowColor: isNoneish(color.shadowColor) ? 'none' : normalizeHex(color.shadowColor, '#00000040'),
     outlineColor: isNoneish(color.outlineColor) ? 'none' : normalizeHex(color.outlineColor, '#000000'),
+    borderColor: isNoneish(color.borderColor) ? 'none' : normalizeHex(color.borderColor, '#ffffff'),
+    extrusionColor: isNoneish(color.extrusionColor) ? 'none' : normalizeHex(color.extrusionColor, '#000000'),
     backgroundColors: strList(color.backgroundColors, ['#f5f5f7']).map((c) => normalizeHex(c, '#f5f5f7')),
   };
 
   const effectsProfile: EffectsProfile = {
     shadow: str(effects.shadow, 'none'),
     outline: str(effects.outline, 'none'),
+    border: str(effects.border, 'none'),
+    extrusion: str(effects.extrusion, 'none'),
     glow: str(effects.glow, 'none'),
     emboss: str(effects.emboss, 'none'),
     inkBleed: str(effects.inkBleed, 'none'),
@@ -456,6 +482,15 @@ export function normalizeStyleDna(input: unknown): StyleDna {
       0,
       0.3,
     ),
+    borderWidthEm: num(hints.borderWidthEm, colorProfile.borderColor === 'none' ? 0 : 0.05, 0, 0.4),
+    extrusionOffsetEm: num(
+      hints.extrusionOffsetEm,
+      colorProfile.extrusionColor === 'none' ? 0 : 0.06,
+      0,
+      0.5,
+    ),
+    extrusionAngleDegrees: num(hints.extrusionAngleDegrees, 45, -180, 180),
+    roundness: num(hints.roundness, 0.4, 0, 1),
     shadowOffsetEm: num(hints.shadowOffsetEm, hasEffect(effectsProfile.shadow) ? 0.045 : 0, 0, 0.5),
     shadowBlurEm: num(hints.shadowBlurEm, hasEffect(effectsProfile.shadow) ? 0.06 : 0, 0, 0.8),
     shadowAngleDegrees: num(hints.shadowAngleDegrees, 45, -180, 180),
