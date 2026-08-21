@@ -5,6 +5,8 @@ import { fileURLToPath, URL } from 'node:url';
 const API_PORT = process.env.API_PORT ?? '8787';
 
 export default defineConfig({
+  // GitHub Pages serves the site from /<repo>/; local dev and `npm start` use "/".
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react()],
   resolve: {
     alias: {

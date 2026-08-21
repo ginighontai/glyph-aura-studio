@@ -37,6 +37,19 @@ raster generation.
 
 ---
 
+## Run it without a terminal
+
+The vector engine, the analyser and the phonetic keyboards all run in the browser,
+so the studio is fully usable as a static site — no install, no command line.
+
+**Live build:** every push to `main` is tested, built and published to GitHub Pages by
+`.github/workflows/deploy.yml`. Open the Pages URL for this repository and start working.
+
+What the hosted build cannot do, because it has no server: Gemini style analysis,
+AI raster generation, OCR verification and Gemini-assisted transliteration. Those need
+the Node server in this repo and an API key. Everything else — reference measurement,
+style DNA, rendering, all six fidelity sliders, PNG/JPG/SVG export at up to 4× — works.
+
 ## Quick start
 
 ```bash
@@ -204,7 +217,7 @@ tools/offline-typecheck/   type-check without node_modules (see its README)
 | `npm run dev` | API + Vite together |
 | `npm run build` | Type-check, then bundle |
 | `npm start` | Serve `dist/` and `/api` from one Node process |
-| `npm test` | 68 test cases across transliteration, analysis, layout, params, prompt, fidelity and SVG |
+| `npm test` | 72 test cases across transliteration, analysis, layout, params, prompt, fidelity and SVG |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run fonts:fetch` | Vendor the type library (skips faces already present) |
 

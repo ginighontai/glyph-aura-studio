@@ -1,0 +1,64 @@
+name: Verify and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only the vector engine ships to Pages: it runs entirely in the browser, so the
+# published site is fully usable without an API key. The Gemini features need the
+# Node server from this repo and are therefore absent from the static build.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Runs with nothing installed: Node's own test runner plus type stripping.
+      - name: Test
+        run: npm test
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: npx vite build
+
+      - name: Check the bundle actually contains the app
+        run: |
+          test -f dist/index.html
+          test -d dist/fonts
+          echo "bundled fonts: $(ls dist/fonts/*.ttf | wc -l)"
+          test "$(ls dist/fonts/*.ttf | wc -l)" -ge 30
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

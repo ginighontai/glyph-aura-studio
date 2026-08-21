@@ -1,3 +1,4 @@
+import { assetUrl } from '@/lib/assets';
 import { FONT_MANIFEST } from '@/generated/font-manifest';
 import type { ScriptId } from '@/types/project';
 import type { FontCategory, StyleDna } from '@/types/styleDna';
@@ -199,7 +200,7 @@ export function fontAsBase64(font: BundledFont): Promise<string | null> {
 
   const promise = (async () => {
     try {
-      const response = await fetch(font.file);
+      const response = await fetch(assetUrl(font.file));
       if (!response.ok) return null;
       const buffer = await response.arrayBuffer();
       const bytes = new Uint8Array(buffer);

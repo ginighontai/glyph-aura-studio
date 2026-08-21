@@ -1,3 +1,4 @@
+import { apiUrl } from '@/lib/assets';
 import type { ScriptId } from '@/types/project';
 
 export interface Capabilities {
@@ -27,7 +28,7 @@ async function request<T>(path: string, body?: unknown, timeoutMs = 120_000): Pr
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`/api${path}`, {
+    const response = await fetch(apiUrl(path), {
       method: body === undefined ? 'GET' : 'POST',
       headers: body === undefined ? undefined : { 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
