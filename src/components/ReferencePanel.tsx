@@ -62,11 +62,18 @@ export function ReferencePanel() {
         ) : null
       }
     >
+      {/*
+        Programmatic trigger only: the drop zone below (and the Replace button)
+        are the labelled controls. Left in the accessibility tree it would be an
+        unnamed, invisible tab stop — a screen-reader dead end.
+      */}
       <input
         ref={inputRef}
         type="file"
         accept={ACCEPTED_TYPES.join(',')}
         className="ga-sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
         onChange={(event: ChangeEvent<HTMLInputElement>) => {
           void accept(event.currentTarget.files?.[0]);
           event.currentTarget.value = '';

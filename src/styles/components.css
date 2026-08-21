@@ -495,7 +495,8 @@
 }
 
 .ga-stage--failed {
-  color: var(--ga-error);
+  /* Sits on the panel, not on a tint, so it uses the darker ink for AA. */
+  color: var(--ga-on-error-soft);
 }
 
 .ga-stage__bullet {

@@ -27,7 +27,11 @@ export function ExportPanel() {
       title="Export"
       icon="download"
       id="export"
-      subtitle="Re-rendered at full resolution on download — never an upscaled preview."
+      subtitle={
+        output?.kind === 'raster'
+          ? 'The AI engine returns a fixed-size bitmap, so scaling it up interpolates. Vector-engine output re-renders at full resolution instead.'
+          : 'Re-rendered at full resolution on download — never an upscaled preview.'
+      }
     >
       <div className="ga-field">
         <span className="ga-label">Format</span>

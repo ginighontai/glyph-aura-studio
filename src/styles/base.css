@@ -615,26 +615,22 @@ canvas {
 
 .ga-chip--accent {
   background: var(--ga-accent-soft);
-  color: var(--ga-accent);
+  color: var(--ga-on-accent-soft);
 }
 
 .ga-chip--success {
   background: var(--ga-success-soft);
-  color: var(--ga-success);
+  color: var(--ga-on-success-soft);
 }
 
 .ga-chip--warning {
   background: var(--ga-warning-soft);
-  color: #a35d00;
-}
-
-:root[data-theme='dark'] .ga-chip--warning {
-  color: var(--ga-warning);
+  color: var(--ga-on-warning-soft);
 }
 
 .ga-chip--error {
   background: var(--ga-error-soft);
-  color: var(--ga-error);
+  color: var(--ga-on-error-soft);
 }
 
 .ga-dot {
